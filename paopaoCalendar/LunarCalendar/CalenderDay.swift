@@ -21,7 +21,7 @@ struct CalenderDay: View {
                 Text(day)
                     .frame(width: 40, height: 40, alignment: .center)
                     .font(.title)
-                    .foregroundColor(isWeekDay ? Color.red : Color.black)
+                    .foregroundColor(isWeekDay ? Color.red : Color.gray)
                 
                 Text(lunar)
                     .font(.footnote)

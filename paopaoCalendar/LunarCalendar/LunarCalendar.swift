@@ -15,8 +15,8 @@ public struct LunarCalendar : View{
     private var lastTenYears: DateInterval {
         let currentDate = Date()
         let calendar = Calendar.current
-        let tenYearsAgo = calendar.date(byAdding: .year, value: -5, to: currentDate)!
-        let tenYearsLater = calendar.date(byAdding: .year, value: 5, to: currentDate)!
+        let tenYearsAgo = calendar.date(byAdding: .year, value: -1, to: currentDate)!
+        let tenYearsLater = calendar.date(byAdding: .year, value: 1, to: currentDate)!
         return DateInterval(start: tenYearsAgo, end: tenYearsLater)
     }
     
@@ -33,13 +33,13 @@ public struct LunarCalendar : View{
                 .frame(height: 30.0)
             
             //这里初始化日历启动时显示的时间范围
-            CalendarGrid(interval: currentyear) { date in
+            CalendarGrid(interval: lastTenYears) { date in
                 
                 CalenderDay(day: Tool.getDay(date: date),
                             lunar: Tool.getInfo(date: date),
                             isToday: calendar.isDateInToday(date),
                             isWeekDay: Tool.isWeekDay(date: date))
-                    .onTapGesture {
+                    .onTapGesture {//点击视图的事件
                         mode.wrappedValue.dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                             self.onSelect(date)

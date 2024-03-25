@@ -80,7 +80,7 @@ struct Tool {
                                                    "12-24":"平安夜",
                                                    "12-25":"圣诞节"]
     
-    ///得到今天日期
+    ///得到参数date的日期
     static func getDay(date: Date) -> String{
         return String(Calendar.current.component(.day, from: date))
     }

@@ -6,17 +6,25 @@
 //
 
 import SwiftUI
+import os.log
 
 public struct CalendarGrid<DateView>: View where DateView: View {
     @Environment(\.calendar) var calendar
     
-    @State private var scrollProxy: ScrollViewProxy?
-    @State private var gridHeight: CGFloat = 0
-    @State private var gridHeighttemp2: CGFloat = 0
     
-    let interval: DateInterval
-    let showHeaders: Bool
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var gridHeight: CGFloat = 0   //网格高度
+    @State private var gridHeighttemp2: CGFloat = 0   //网格高度
+    
+    @State private var visibleSectionID: Int? = nil//根据chatgpt加的获取当前屏幕显示的月份的sectionID用的
+    
+    @State private var labelText : String = "Hello, World2233!"
+    
+    let interval: DateInterval   //时间间隔
+    let showHeaders: Bool      //是否显示每月的title
     let content: (Date) -> DateView
+    
+    //let log=OSLog(subsystem: "com.paopaobox.calendar", category: "YourCategory")
     
     public init(interval: DateInterval, showHeaders: Bool = true, @ViewBuilder content: @escaping (Date) -> DateView) {
         self.interval = interval
@@ -25,6 +33,7 @@ public struct CalendarGrid<DateView>: View where DateView: View {
     }
     
     public var body: some View {
+        
         ///添加到可以滚动
         ScrollView(.vertical, showsIndicators: false){
             ///添加滚动监听
@@ -32,118 +41,136 @@ public struct CalendarGrid<DateView>: View where DateView: View {
                 ///生成网格
                 LazyVGrid(columns: Array(repeating: GridItem(spacing: 2, alignment: .center), count: 7)) {
                     ///枚举每个月
-                    ForEach(months, id: \.self) { month in
+                    ForEach(arrayMonths, id: \.self) { month in
                         ///以每月为一个Section,添加月份
-                        Section(header: header(for: month)) {
+                        Section(header: getHeader(for: month)) {
                             ///添加日
-                            ForEach(days(for: month), id: \.self) { date in
+                            //var loopCount = 0 // 定义一个计数器
+                            
+                            ForEach(getDays(for: month), id: \.self) { date in
                                 ///如果不在当月就隐藏
+                                
                                 if calendar.isDate(date, equalTo: month, toGranularity: .month) {
                                     content(date).id(date)
+                                    
                                 } else {
-                                    content(date).hidden()
+                                    content(date).hidden()//每个月初和月末的空的空格子
                                 }
+
                             }
                         }
-                        .id(sectionID(for: month))///给每个月创建ID,方便进行滚动标记
+                        .id(getYearMonthSectionID(for: month))//修改成用年和月做SectionID
+                        
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear.preference(key: SectionIDPreferenceKey.self, value: getYearMonthSectionID(for: month))
+                            }
+                        )
+                        
                     }
                 }
-                
+                .onPreferenceChange(SectionIDPreferenceKey.self) { value in
+                    visibleSectionID = value
+                    print("Visible Section ID: \(visibleSectionID ?? -1)")
+                    
+                    if let visibleSectionIDtemp = visibleSectionID {
+                        let year = visibleSectionIDtemp / 100 // 假设整数部分代表年份
+                        let month = visibleSectionIDtemp % 100 // 假设百位数代表月份
+                        print("Visible Section Year: \(year), Month: \(month)")
+                        labelText = "New Label\(year)"
+                        
+                    } else {
+                        print("Visible Section ID is nil.")
+                    }
+                    
+                }
                 .onAppear(){
                     ///当View展示的时候直接滚动到标记好的月份
                     print("当View展示的时候直接滚动到标记好的月份")
-                    proxy.scrollTo(scroolSectionID() )
+                    //os_log("test",log: log,type: .debug)
+                    proxy.scrollTo(getYearMonthScroolSectionID() )
                 }
-                .background( GeometryReader { geometry in
-                    Color.clear.onAppear{
-                        scrollProxy = proxy
-                        gridHeight = geometry.size.height
-                        gridHeighttemp2=geometry.frame(in: .global).size.height
-                    }
-                    
+                
 
-                    
-                    .onChange(of: geometry.frame(in: .global).minY){value2 in
-             
-                        /*
-                        // Calculate the visible range of dates based on the scroll offset
-                        let visibleDates = calculateVisibleDates(scrollOffset: value2)
-                        if let firstDate = visibleDates.first {
-                            let year = calendar.component(.year, from: firstDate)
-                            print("Current year:", year)
-                            // 更新界面上显示的当前年份
-                            //self.currentYear = year
-                            print("year==="+String(year))
-                        }
-                        */
-                        if value2 >= 0 {
-                            // Reached top
-                            
-                            print("Reached top=\(value2)")
-                        }
-                        else if -value2>gridHeight*0.8
-                        {
-                            print("Reached bottom=\(value2)")
-                        }
-                        
-                        /*
-                        else if value2 + geometry.size.height >= geometry.frame(in: .global).size.height {
-                            // Reached bottom
-                            print("Reached bottom=\(value2)")
-                            // Do something when ScrollView reaches bottom
-                        }
-                        */
-                        else
-                        {
-                            //print(value2)
-                        }
-                    }
-                    
-                })
                 Text("LazyVGrid Height: \(gridHeight)")
                 Text("LazyVGrid gridHeighttemp2: \(gridHeighttemp2)")
+                // 在闭包外部输出 month 变量的值
+                /*
+                let monthsString = arrayMonths.map { month in
+                    return "\(month)"
+                }
+                Text("所有月份的值：\(monthsString)")
+                */
             }
         }
         
     }
-    ///获取当前是几月,并进行滚动到那里
-    private func scroolSectionID() -> Int {
-        var component = calendar.component(.month, from: Date())
-        print("获取当前是几月,并进行滚动到那里")
-        //print(Date())
+
+    
+    ///获取当前是几年几月,并进行滚动到那里
+    private func getYearMonthScroolSectionID() -> Int {
+        var year = calendar.component(.year, from: Date())
+        var month = calendar.component(.month, from: Date())
+        
+        //year=2025
+        //month=1
+        
+        if month != 12 {
+            month += 1 // 如果不等于 12，则加 1
+        } else {
+            year += 1
+            month = 1 // 如果等于 12，则设置为 1
+        }
         print("当前GMT格林尼治标准时间日期是：\(Date())")
-        //
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         dateFormatter.timeZone = TimeZone.current // 使用当前时区
 
         let localDate = dateFormatter.string(from: Date())
         print("当前本地日期是：\(localDate)")
-        //
         
-        
-        
-        //component=15
-        component=component+1
-        print(component)
-        return component
+        // 将年和月组合成一个唯一的整数作为滚动标记的 section ID
+        let sectionID = year * 100 + month
+        print("getYearMonthScroolSectionID====\(sectionID)")
+        return sectionID
     }
-    ///根据月份生成SectionID
-    private func sectionID(for month: Date) -> Int {
+    
+    
+    
+    ///根据月份生成SectionID，可能废弃不用了
+    /*
+    private func getSectionID(for month: Date) -> Int {
         let component = calendar.component(.month, from: month)
+        print("componentget===\(component)")//这个就是实际的月份，不用+1
         return component
     }
+    */
+    
+    /// 根据年月生成 Section ID
+    private func getYearMonthSectionID(for date: Date) -> Int {
+        let year = calendar.component(.year, from: date)
+        let month = calendar.component(.month, from: date)
+        
+        // 将年和月组合成一个唯一的整数作为 Section ID
+        let sectionID = year * 100 + month
+        //print("sectionID====\(sectionID)")
+        return sectionID
+    }
+    
+    
     ///获得年间距的月份日期的第一天,生成数组
-    private var months: [Date] {
-        calendar.generateDates(
+    private var arrayMonths: [Date] {
+        calendar.getGenerateDates(
             inside: interval,
             matching: DateComponents(day: 1, hour: 0, minute: 0, second: 0)
         )
     }
+    
+    
     ///创建一个简单的SectionHeader
-    private func header(for month: Date) -> some View {
+    private func getHeader(for month: Date) -> some View {
         let component = calendar.component(.month, from: month)
-        let formatter = component == 1 ? DateFormatter.monthAndYear : .month
+        let formatter = component == 1 ? DateFormatter.getDFmonthAndYear : .getDFmonth
         
         return Group {
             if showHeaders {
@@ -153,8 +180,10 @@ public struct CalendarGrid<DateView>: View where DateView: View {
             }
         }
     }
+    
+    
     ///获取每个月,网格范围内的起始结束日期数组
-    private func days(for month: Date) -> [Date] {
+    private func getDays(for month: Date) -> [Date] {
         ///重点讲解
         ///先拿到月份间距,例如1号--31号
         guard let monthInterval = calendar.dateInterval(of: .month, for: month) else { return [] }
@@ -163,31 +192,34 @@ public struct CalendarGrid<DateView>: View where DateView: View {
         ///获取月最后一天所在周的周一到周日
         let monthLastWeek = monthInterval.end.getWeekStartAndEnd(isEnd: true)
         ///然后根据月初所在周的周一为0号row 到月末所在周的周日为最后一个row生成数组
-        return calendar.generateDates(
+        return calendar.getGenerateDates(
             inside: DateInterval(start: monthFirstWeek.start, end: monthLastWeek.end),
             matching: DateComponents(hour: 0, minute: 0, second: 0)
         )
     }
-      /*
-    private func calculateVisibleDates(scrollOffset: CGFloat) -> [Date] {
-        // 根据滚动位置，计算当前可见的日期范围
-        // 这里假设您已经有了一些逻辑来根据滚动位置计算当前可见的日期范围
-        // 您需要根据具体情况自行实现这个逻辑
-        let visibleDates: [Date] = []
-        // 返回当前可见的日期数组
-        return visibleDates
-    }
-    */
+
 }
+
+
+
 
 struct CalendarView_Previews: PreviewProvider {
     static var previews: some View {
         CalendarGrid(interval: .init()) { _ in
-            Text("30")
+            Text("30aaaaaaaaaaaaaaaaaa")
                 .padding(8)
                 .background(Color.blue)
                 .cornerRadius(8)
         }
+    }
+}
+
+//根据chatgpt加的获取当前屏幕显示的月份的sectionID用的
+struct SectionIDPreferenceKey: PreferenceKey {
+    static var defaultValue: Int? = nil
+
+    static func reduce(value: inout Int?, nextValue: () -> Int?) {
+        value = value ?? nextValue()
     }
 }
 
@@ -229,13 +261,13 @@ extension Date {
 
 extension DateFormatter {
     
-    static var month: DateFormatter {
+    static var getDFmonth: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "M月"
         return formatter
     }
     
-    static var monthAndYear: DateFormatter {
+    static var getDFmonthAndYear: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy年M月"
         return formatter
@@ -243,7 +275,7 @@ extension DateFormatter {
 }
 
 extension Calendar {
-    func generateDates(inside interval: DateInterval, matching components: DateComponents) -> [Date] {
+    func getGenerateDates(inside interval: DateInterval, matching components: DateComponents) -> [Date] {
         var dates: [Date] = []
         
         dates.append(interval.start)
@@ -260,3 +292,14 @@ extension Calendar {
         return dates
     }
 }
+
+// 根据当前设备显示模式返回对应的颜色方案
+/*
+func schemeForCurrentDisplayMode() -> ColorScheme {
+    if UITraitCollection.current.userInterfaceStyle == .dark {
+        return .dark // 如果当前是 Dark Mode，则返回 Dark 颜色方案
+    } else {
+        return .light // 如果当前是 Light Mode，则返回 Light 颜色方案
+    }
+}
+*/

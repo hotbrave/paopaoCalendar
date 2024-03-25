@@ -8,10 +8,14 @@
 import SwiftUI
 
 public struct CalendarWeek: View {
+    
+    @State private var labelText = "Hello, World!"
+    
     public var body: some View {
-        var showyear=2024
+        
         //Text(Tool.getDay(date: Date())+"年")
-        Text(String(showyear)+"年")
+        Text(String(labelText)+"年")
+        //CalendarGrid()
         HStack{
             ForEach(1...7, id: \.self) { count in
                 Text(Tool.getWeek(week: count))

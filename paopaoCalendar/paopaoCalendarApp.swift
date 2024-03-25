@@ -13,7 +13,7 @@ struct paopaoCalendarApp: App {
         WindowGroup {
             //ContentView()
             LunarCalendar(select: { date in
-                print("启动显示时间==\(date)")
+                print("这里返回的居然是用户点击的日期的时间,好像目前没什么用==\(date)")
             })
         }
     }
