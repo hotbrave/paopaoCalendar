@@ -18,22 +18,24 @@ public struct CalendarGrid<DateView>: View where DateView: View {
     
     @State private var visibleSectionID: Int? = nil//根据chatgpt加的获取当前屏幕显示的月份的sectionID用的
     
-    @State private var labelText : String = "Hello, World2233!"
+    //@State private var labelText : String = "Hello, World2233!"
     
     let interval: DateInterval   //时间间隔
     let showHeaders: Bool      //是否显示每月的title
     let content: (Date) -> DateView
     
+    @Binding var weekLabelText: String
     //let log=OSLog(subsystem: "com.paopaobox.calendar", category: "YourCategory")
     
-    public init(interval: DateInterval, showHeaders: Bool = true, @ViewBuilder content: @escaping (Date) -> DateView) {
+    public init(interval: DateInterval, showHeaders: Bool = true,weekLabelText: Binding<String>, @ViewBuilder content: @escaping (Date) -> DateView) {
         self.interval = interval
         self.showHeaders = showHeaders
         self.content = content
+        self._weekLabelText = weekLabelText
     }
     
     public var body: some View {
-        
+
         ///添加到可以滚动
         ScrollView(.vertical, showsIndicators: false){
             ///添加滚动监听
@@ -71,13 +73,22 @@ public struct CalendarGrid<DateView>: View where DateView: View {
                 }
                 .onPreferenceChange(SectionIDPreferenceKey.self) { value in
                     visibleSectionID = value
-                    print("Visible Section ID: \(visibleSectionID ?? -1)")
+                   // print("Visible Section ID: \(visibleSectionID ?? -1)")
                     
                     if let visibleSectionIDtemp = visibleSectionID {
-                        let year = visibleSectionIDtemp / 100 // 假设整数部分代表年份
-                        let month = visibleSectionIDtemp % 100 // 假设百位数代表月份
-                        print("Visible Section Year: \(year), Month: \(month)")
-                        labelText = "New Label\(year)"
+                        var year = visibleSectionIDtemp / 100 // 假设整数部分代表年份
+                        var month = visibleSectionIDtemp % 100 // 假设百位数代表月份
+                        //print("Visible Section Year: \(year), Month: \(month)")
+                        
+                        if month != 12 {
+                            month += 1 // 如果不等于 12，则加 1
+                        } else {
+                            year += 1
+                            month = 1 // 如果等于 12，则设置为 1
+                        }
+                        
+                        //weekLabelText = "\(year)年\(month)月"
+                        weekLabelText = "\(year)年"
                         
                     } else {
                         print("Visible Section ID is nil.")
@@ -203,16 +214,7 @@ public struct CalendarGrid<DateView>: View where DateView: View {
 
 
 
-struct CalendarView_Previews: PreviewProvider {
-    static var previews: some View {
-        CalendarGrid(interval: .init()) { _ in
-            Text("30aaaaaaaaaaaaaaaaaa")
-                .padding(8)
-                .background(Color.blue)
-                .cornerRadius(8)
-        }
-    }
-}
+
 
 //根据chatgpt加的获取当前屏幕显示的月份的sectionID用的
 struct SectionIDPreferenceKey: PreferenceKey {
