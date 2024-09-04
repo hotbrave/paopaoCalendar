@@ -9,12 +9,12 @@ import SwiftUI
 
 public struct CalendarWeek: View {
     
-    @State private var labelText = "Hello, World!"
-    
+    //@State private var labelText = "Hello, World!"
+    var labelText: String
     public var body: some View {
-        
+
         //Text(Tool.getDay(date: Date())+"年")
-        Text(String(labelText)+"年")
+        Text(String(labelText))
         //CalendarGrid()
         HStack{
             ForEach(1...7, id: \.self) { count in
@@ -26,8 +26,4 @@ public struct CalendarWeek: View {
     }
 }
 
-struct CalendarWeek_Previews: PreviewProvider {
-    static var previews: some View {
-        CalendarWeek()
-    }
-}
+
