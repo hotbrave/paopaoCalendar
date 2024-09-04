@@ -16,7 +16,7 @@ public struct LunarCalendar : View{
         let currentDate = Date()
         let calendar = Calendar.current
         let tenYearsAgo = calendar.date(byAdding: .year, value: -2, to: currentDate)!
-        let tenYearsLater = calendar.date(byAdding: .year, value: 2, to: currentDate)!
+        let tenYearsLater = calendar.date(byAdding: .year, value: 3, to: currentDate)!
         return DateInterval(start: tenYearsAgo, end: tenYearsLater)
     }
     
