@@ -4,7 +4,7 @@ import SwiftUI
 public struct LunarCalendar : View{
     @Environment(\.calendar) var calendar
     @Environment(\.presentationMode) var mode
-    
+    @State private var weekLabelText: String = "Hello, world3331333!"
     /**
      获取今年的时间间隔用于展示日历，需要修改
      */
@@ -15,8 +15,8 @@ public struct LunarCalendar : View{
     private var lastTenYears: DateInterval {
         let currentDate = Date()
         let calendar = Calendar.current
-        let tenYearsAgo = calendar.date(byAdding: .year, value: -1, to: currentDate)!
-        let tenYearsLater = calendar.date(byAdding: .year, value: 1, to: currentDate)!
+        let tenYearsAgo = calendar.date(byAdding: .year, value: -2, to: currentDate)!
+        let tenYearsLater = calendar.date(byAdding: .year, value: 2, to: currentDate)!
         return DateInterval(start: tenYearsAgo, end: tenYearsLater)
     }
     
@@ -29,11 +29,11 @@ public struct LunarCalendar : View{
     public var body: some View {
         
         VStack(alignment: .center, spacing: 0, content: {
-            CalendarWeek()
+            CalendarWeek(labelText: weekLabelText)
                 .frame(height: 30.0)
             
             //这里初始化日历启动时显示的时间范围
-            CalendarGrid(interval: lastTenYears) { date in
+            CalendarGrid(interval: lastTenYears,weekLabelText: $weekLabelText) { date in
                 
                 CalenderDay(day: Tool.getDay(date: date),
                             lunar: Tool.getInfo(date: date),
